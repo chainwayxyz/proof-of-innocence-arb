@@ -1,0 +1,8 @@
+.env
+node_modules
+build
+cache
+artifacts
+src/types
+.vscode
+**.DS_Store

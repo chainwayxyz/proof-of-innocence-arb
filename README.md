@@ -2,22 +2,62 @@
 
 Mixers are popular protocols on blockchains allows users to make private transactions by breaking the on-chain link between the recipient and destination addresses. The most used mixer Tornado Cash got sanctioned by OFAC in August 2022 for the reasons that it has been used to launder money. After the sanction we came up with the idea [proof of innocence](https://github.com/chainwayxyz/proof-of-innocence). 
 
+
+
 Proof of Innocence is a tool that allows users to prove that their withdrawals from Tornado Cash are not from a list of specified deposits, selected by the user themselves. This allows users to clear their name and demonstrate their innocence without revealing their identity.
 
 Now we further developed the Proof of Innocence to support arbitrary amount of deposits and withdrawals: **Proof of Innocence Arb**.
 
-## Technology
+## How Tornado Cash Works
 
-Our enhanced privacy pool, a fork of [Tornado Nova](https://github.com/tornadocash/tornado-nova), supports arbitrary transaction amounts while maintaining the core functionality of the original Proof of Innocence tool. For the sake of practicality and the hackathon, we have downgraded the shielded transaction feature, but retained the ability to support arbitrary deposits and withdrawals.
+Tornado.Cash implements an Ethereum zero-knowledge privacy solution: a smart contract that accepts transactions in Ether so that the amount can be later withdrawn with no reference to the original transaction.
 
-Each deposit generates a leaf in the Merkle tree using the Poseidon function, which takes the deposit's Ether amount and a random blinding number as inputs. Zero-knowledge proofs are utilized to verify that input commitments remain unspent, input and output amounts match, and other checks are satisfied. This enables users to make multiple deposits and withdraw any amount they desire by organizing commitments accordingly.
+Every deposit generates a new leaf in the merkle tree.
+![deposit](images/3.jpg)
 
-The Proof of Innocence circuit functions as a step circuit for each transaction and can be folded using the [Nova Folding Scheme](https://eprint.iacr.org/2021/370). In each step, the circuit verifies the validity of the current transaction, confirms deposits (if any) are from an approved list, and ultimately outputs the withdrawal transaction. Integrating this circuit with the Nova Folding Scheme allows for a succinct proof of the user's allowlist membership for selected deposits.
+When withdrawing, user provides a zk proof that they are in the merkle tree without revealing their identity. Then smart contract adds the nullifier to a mapping to prevent double spending.
+![withdraw](images/4.jpg)
+
+
+The issue is you share the same anonimity set with hackers or sanctioned addresses.
+![same anonimity set](images/5.jpg)
+
+
+To solve this issue we created [proof of innocence](https://github.com/chainwayxyz/proof-of-innocence) where you can prove that you are not in a list of deposits.
+![proof of innocence](images/6.jpg)
+
+## Better Privacy Protocols
+
+Tornado Cash only supports fixed amount of deposit and withdrawals. But some privacy protocols like Tornado Nova or Railgun supports transactions with arbitrary amounts.
+
+To support arbitrary amounts, new join split transaction is added.
+![join split transaction](images/8.jpg)
+
+Making proof of innocence on this kind of protocols are hard because transactions are now directed acylic graphs.
+![transaction graph](images/9.jpg)
+
+To generate a proof of innocence we first flatten the transactions.
+
+![flattten transactions](images/10.jpg)
+
+Then for every transaction we prove our step function which looks like this:
+![step function](images/18.jpg)
+Whole code for the step function can be found here: [proofOfInnocence.circom](circuits/proofOfInnocence.circom)
+
+Now we have a proof for every step that we can fold with [Nova Folding Scheme](https://eprint.iacr.org/2021/370).
+![proofs](images/12.jpg)
+![proofs](images/13.jpg)
+![proofs](images/14.jpg)
+![proofs](images/15.jpg)
+![proofs](images/16.jpg)
+
+After folding compressing the witness makes it ZK-SNARK
+![compressing](images/17.jpg)
 
 ## TODO:
 
 - UI for the privacy pool
-- generating a succint proof of innocence on browser using [Nova Scotia](https://github.com/nalinbhardwaj/Nova-Scotia)
+- Generating a succint proof of innocence on browser using [Nova Scotia](https://github.com/nalinbhardwaj/Nova-Scotia)
 - Add shielded transactions
 - Change nullifier architecture to increase security
 
